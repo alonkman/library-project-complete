@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="/style.css" />
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Book Loan Form</title>
+  </head>
+  <style>
+    .expired-loan-row {
+      background-color: red;
+    }
+
+    .returned-loan-row {
+      background-color: green !important;
+    }
+  </style>
+
+  <body>
+    <div class="subnavbar">
+      <ul>
+        <li><a href="loansH.html">List</a></li>
+      </ul>
+    </div>
+
+    <div class="title">Loans:</div>
+    <div id="loansDisplay"></div>
+
+    <script>
+      const MY_SERVER = "https://library-project-back-tazt.onrender.com";
+      const loansDisplay = document.getElementById("loansDisplay");
+
+      const showLoans = async () => {
+        const loansResponse = await axios.get(MY_SERVER + "/show-loans");
+        const loans = loansResponse.data;
+
+        const tbodyHtml = loans
+          .map((loan) => {
+            const loanDate = new Date(loan.loandate);
+            const returnDate = new Date(loan.returndate);
+            const todayDate = new Date();
+
+            let rowClass = "";
+            if (loan.returned) {
+              rowClass = "returned-loan-row";
+            } else if (todayDate > returnDate) {
+              rowClass = "expired-loan-row";
+            }
+
+            const customerName = loan.customer_name || "Unknown";
+            const bookName = loan.book_name || "Unknown";
+
+            return `
+        <tr class="loan-row ${rowClass}" id="loan-${loan.id}">
+          <td>${customerName}</td>
+          <td>${bookName}</td>
+          <td>${loan.loandate}</td>
+          <td>${loan.returndate}</td>
+          <td class="loan-status">${loan.status}</td>
+          <td>
+          <button onclick="deleteLoan(${loan.id})">Delete</button>
+          <button onclick="returnLoan(${loan.id})">Return Loan</button>
+          <button onclick="openUpdate(${loan.id})">Update Loan</button>
+          </td>
+      </tr>
+
+      `;
+          })
+          .join("");
+
+        loansDisplay.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Customer Name</th>
+          <th>Book Name</th>
+          <th>Loan Date</th>
+          <th>Return Date</th>
+          <th>status</th>
+          <th>Action</th> 
+        </tr>
+      </thead>
+      <tbody>
+        ${tbodyHtml}
+      </tbody>
+    </table>
+  `;
+      };
+
+      showLoans();
+
+      const deleteLoan = async (id) => {
+        try {
+          await axios.delete(MY_SERVER + `/delete-loan/${id}`);
+          showLoans();
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      const openUpdate = async (loanId) => {
+        try {
+          const response = await axios.get(`${MY_SERVER}/get-loan/${loanId}`);
+          console.log("response:", response); // Check the response object
+
+          const loan = response.data;
+          console.log("loan:", loan); // Check the loan data
+
+          const overlay = document.createElement("div");
+          overlay.classList.add("overlay");
+          const popup = document.createElement("div");
+          popup.classList.add("popup");
+
+          const closeButton = document.createElement("button");
+          closeButton.classList.add("close-button");
+          closeButton.innerHTML = "&times;";
+          closeButton.addEventListener("click", closeUpdate);
+
+          const updateContainer = document.createElement("div");
+          updateContainer.classList.add("update-container");
+          updateContainer.innerHTML = `
+            <div class="title">Update a loan:</div>
+            Loan Date<br>
+            <input type="date" id="loanDateInput" value="${formatDate(
+              loan.loandate
+            )}"><br>
+            <button onclick="updateLoan(${loan.id})">Update loan</button>
+          `;
+
+          popup.appendChild(closeButton);
+          popup.appendChild(updateContainer);
+          overlay.appendChild(popup);
+          document.body.appendChild(overlay);
+        } catch (error) {
+          console.log(error);
+        }
+      };
+
+      // Helper function to format the date as "yyyy-MM-dd"
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const updateLoan = async (loanId) => {
+        const loanDateInput = document.getElementById("loanDateInput").value;
+
+        if (loanId && loanDateInput) {
+          try {
+            const data = {
+              loan_id: loanId.toString(),
+              loan_date: loanDateInput,
+            };
+
+            const response = await axios.post(`${MY_SERVER}/update-loan`, data);
+            console.log(response.data); // Handle the response as per your requirements
+            showLoans();
+            closeUpdate();
+          } catch (error) {
+            console.log(error); // Handle the error response as per your requirements
+          }
+        }
+      };
+
+      const closeUpdate = () => {
+        const overlay = document.querySelector(".overlay");
+        if (overlay) {
+          document.body.removeChild(overlay);
+        }
+      };
+      const returnLoan = async (loanId) => {
+        try {
+          const loansResponse = await axios.get(MY_SERVER + "/show-loans");
+          const loan = loansResponse.data.find(data => data.id == loanId);
+          const data = {
+            custid: loan.custid,
+            bookid: loan.bookid,
+            loandate: loan.loandate,
+            returndate:loan.returndate,
+            status: "Returned",
+          };
+
+          await axios.put(`${MY_SERVER}/update-loan/${loanId}`, data);
+          console.log("Loan returned successfully.");
+
+          // Update the loan status in the HTML
+          const loanRow = document.getElementById(`loan-${loanId}`);
+          console.log("loanRow:", loanRow); // Check if the loan row element is found
+
+          if (loanRow) {
+            const statusCell = loanRow.querySelector(".loan-status");
+            console.log("statusCell:", statusCell); // Check if the status cell element is found
+
+            if (statusCell) {
+              statusCell.textContent = "returned";
+            }
+            loanRow.classList.add("returned-loan-row");
+          }
+
+          showLoans(); // update the loan list after returning
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      showLoans();
+    </script>
+  </body>
+</html>

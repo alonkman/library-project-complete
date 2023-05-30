@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+<style>
+  .searchBox {
+    height: 50px;
+    width: 15px;
+  }
+
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .checkbox-container label {
+    margin-right: 10px;
+  }
+
+  #search_customer_id {
+    display: none;
+  }
+</style>
+
+<body>
+  <div class="subnavbar">
+    <ul>
+      <li>
+        <a href="/front/costumers/cosutmersH.html" target="main">List</a>
+      </li>
+      <li>
+        <a href="/front/costumers/add_costumer.html" target="main">Add customer</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="title">Customers:</div>
+  <div id="customersDisplay"></div>
+  
+  <div class="title">Search customer:</div><br>
+  <div>Select the filter you wish to use:</div>
+  <div class="checkbox-container">
+    <input type="radio" id="searchIDBox" onchange="checkBox()" class="searchBox"
+      name="searchBoxCus"><!--Giving it name so it wouldn't be able to check both of them -->
+    <label for="searchIDBox">ID</label>
+    <input type="radio" id="searchNameBox" onchange="checkBox()" class="searchBox" name="searchBoxCus">
+    <label for="searchNameBox">Name</label>
+  </div>
+  <input type="search" id="search_customer_name" oninput="searchCustomerName()" placeholder="Search by name...">
+  <input type="search" id="search_customer_id" placeholder="Search by ID..." oninput="searchCustomerID()">
+  <div id="searchMSG"></div>
+
+  <script>
+    const MY_SERVER = "https://library-project-back-tazt.onrender.com";
+    const showCustomers = async () => {
+      const response = await axios.get(MY_SERVER + "/show-customers");
+      const customersData = response.data;
+      const customersHtml = customersData
+        .map(
+          (cust) => `
+    <tr>
+      <td>${cust.name}</td>
+      <td>${cust.city}</td>
+      <td>${cust.age}</td>
+      <td>
+        <button onclick="deleteCustomer(${cust.id})">Delete</button>
+        <button onclick="openUpdate(${cust.id})">Update</button>
+        <button onclick="openLoan(${cust.id})">Add loan</button>
+      </td>
+    </tr>
+  `
+        )
+        .join("");
+
+      customersDisplay.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Name of customer</th>
+          <th>City</th>
+          <th>Age</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${customersHtml}
+      </tbody>
+    </table>
+  `;
+    };
+    //SEARCH CUSTOMERS FUNCTIONS
+    //CHECK BOX FUNCTION
+    const checkBox = () => {
+      const searchIDBox = document.getElementById('searchIDBox')
+      const searchNameBox = document.getElementById('searchNameBox')
+
+      const searchIdInput = document.getElementById('search_customer_id')
+      const searchNameInput = document.getElementById('search_customer_name')
+      if (searchIDBox.checked) {
+        showCustomers()
+        searchIdInput.style.display = 'block'
+        searchNameInput.style.display = 'none'
+      } else if (searchNameBox.checked) {
+        showCustomers()
+        searchNameInput.style.display = 'block'
+        searchIdInput.style.display = 'none'
+      }
+    }
+
+
+
+    //SEARCH CUSTOMER BY NAME
+    const searchCustomerName = async () => {
+      const searchCustomerCap = document.getElementById('search_customer_name')
+      const searchCustomer = searchCustomerCap.value.toLowerCase()
+
+      const response = await axios.get(`${MY_SERVER}/search-customer-name?search=${searchCustomer}`);
+      const filteredData = response.data
+
+      if (filteredData.some(info =>
+        info.name.toLowerCase().includes(searchCustomer))) {
+        customersDisplay.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name of customer</th>
+                            <th>City</th>
+                            <th>Age</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData.map(inf => `
+                        <tr>
+                            <td>${inf.id}</td>
+                            <td>${inf.name}</td>
+                            <td>${inf.city}</td>
+                            <td>${inf.age}</td>
+                            <td><button onclick="openDele(${inf.id})">Delete</button>
+                            <button onclick="updateCustomer(${inf.id})">Edit</button></td>
+                        </tr> `
+        )
+            .join("")}
+                    </tbody>
+                </table>`
+        searchMSG.innerHTML = ''
+      } else {
+        customersDisplay.innerHTML = ''
+        searchMSG.innerHTML = 'Customer not found'
+        searchMSG.style.color = 'red'
+      }
+    };
+
+    //SEARCH CUSTOMER BY id
+    const searchCustomerID = async () => {
+      const searchCustomerCap = document.getElementById('search_customer_id')
+      const searchCustomer = searchCustomerCap.value
+
+      const response = await axios.get(`${MY_SERVER}/search-customer-id?search=${searchCustomer}`);
+      const filteredData = response.data
+
+      if (filteredData.some(customer =>
+        customer.id.toString().includes(searchCustomer))) {
+        customersDisplay.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name of customer</th>
+                            <th>City</th>
+                            <th>Age</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData.map(inf => `
+                        <tr>
+                            <td>${inf.id}</td>
+                            <td>${inf.name}</td>
+                            <td>${inf.city}</td>
+                            <td>${inf.age}</td>
+                            <td><button onclick="openDele(${inf.id})">Delete</button>
+                            <button onclick="updateCustomer(${inf.id})">Edit</button></td>
+                        </tr> `
+        )
+            .join("")}
+                    </tbody>
+                </table>`
+        searchMSG.innerHTML = ''
+      } else {
+        customersDisplay.innerHTML = ''
+        searchMSG.innerHTML = 'Customer not found'
+        searchMSG.style.color = 'red'
+      }
+    };
+
+    //END OF SEARCH FUNCTIONS
+    const deleteCustomer = async (customerid) => {
+      await axios.delete(`${MY_SERVER}/delete-customer/${customerid}`);
+
+      showCustomers();
+    };
+
+    const openUpdate = async (customerid) => {
+      const customer = await axios.get(
+        `${MY_SERVER}/get-customer/${customerid}`
+      );
+
+      const overlay = document.createElement("div");
+      overlay.classList.add("overlay");
+
+      const popup = document.createElement("div");
+      popup.classList.add("popup");
+
+      const closeButton = document.createElement("button");
+      closeButton.classList.add("close-button");
+      closeButton.innerHTML = "&times;";
+      closeButton.addEventListener("click", closeUpdate);
+
+      const updateContainer = document.createElement("div");
+      updateContainer.classList.add("update-container");
+      updateContainer.innerHTML = `
+        <div class="title">Update a customer:</div>
+        Full Name<br>
+        <input id="name" placeholder="${customer.data["name"]}"><br>
+        City<br>
+        <input id="city" placeholder="${customer.data["city"]}"><br>
+        Age<br>
+        <input id="age" placeholder="${customer.data["age"]}"><br>
+        <button onclick="updateCustomer(${customer.data["id"]})">Update</button>
+      `;
+
+      popup.appendChild(closeButton);
+      popup.appendChild(updateContainer);
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+    };
+
+    const updateCustomer = async (custId) => {
+      const name = document.getElementById("name").value;
+      const city = document.getElementById("city").value;
+      const age = document.getElementById("age").value;
+
+      const data = {
+        name: name,
+        city: city,
+        age: age,
+      };
+
+      await axios.put(`${MY_SERVER}/update-customer/${custId}`, data);
+    };
+
+    const closeUpdate = () => {
+      const overlay = document.querySelector(".overlay");
+      if (overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+
+    const openLoan = async (custId) => {
+      const overlay = document.createElement("div");
+      overlay.classList.add("overlay");
+
+      const popup = document.createElement("div");
+      popup.classList.add("popup");
+
+      const closeButton = document.createElement("button");
+      closeButton.classList.add("close-button");
+      closeButton.innerHTML = "&times;";
+      closeButton.addEventListener("click", closeLoan);
+
+      const loanContainer = document.createElement("div");
+      loanContainer.classList.add("loan-container");
+      loanContainer.innerHTML = `
+    <div class="title">Loan a book:</div>
+    Book ID<br>
+    <input type="text" id="bookid" placeholder="customer ID: ${custId}"><br>
+    Loan Date<br>
+    <input type="date" id="loanDateInput" placeholder="Loan Date"><br>
+    <button onclick="addLoan(${custId})">Add Loan</button>
+  `;
+
+      popup.appendChild(closeButton);
+      popup.appendChild(loanContainer);
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+    };
+
+    const addLoan = async (custId) => {
+      const bookId = document.getElementById("bookid").value;
+      const loanDateInput = document.getElementById("loanDateInput").value;
+
+      if (custId && bookId && loanDateInput) {
+        // Convert the loan date to the desired format
+        const loanDate = new Date(loanDateInput);
+        const formattedLoanDate = `${loanDate.getDate()}/${loanDate.getMonth() + 1
+          }/${loanDate.getFullYear()}`;
+
+        const data = {
+          cust_id: custId.toString(),
+          book_id: bookId.toString(),
+          loan_date: formattedLoanDate,
+          return_date: formattedLoanDate, // You can leave it empty as it will be calculated on the server-side
+          status: 'Active'
+        };
+
+        try {
+          const response = await axios.post(`${MY_SERVER}/add-loan`, data, {
+            headers: { Accept: "*/*", "Access-Control-Allow-Origin": "*" },
+          });
+          console.log(response.data); // Handle the response as per your requirements
+          showCustomers();
+        } catch (error) {
+          console.log(error); // Handle the error response as per your requirements
+        }
+      }
+    };
+
+    const closeLoan = () => {
+      const overlay = document.querySelector(".overlay");
+      if (overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+
+    showCustomers();
+  </script>
+</body>
+
+</html>

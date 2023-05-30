@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+<style>
+  .searchBox {
+            height: 50px;
+            width: 15px;
+        }
+
+        .checkbox-container {
+            display: flex;
+        align-items: center;
+        }
+
+        .checkbox-container label {
+        margin-right: 10px;
+        }
+
+        #search_book_id {
+            display: none;
+        }
+</style>
+
+<body>
+  <div class="subnavbar">
+    <ul>
+      <li><a href="booksH.html">List</a></li>
+      <li><a href="add_book.html">Add book</a></li>
+    </ul>
+  </div>
+  <div class=" title">Search book:</div><br>
+  <div>Select the filter you wish to use:</div>
+  <div class="checkbox-container">
+      <input type="radio" id="searchIDBox" onchange="checkBox()" class="searchBox" name="searchBox"><!--Giving it name so it wouldn't be able to check both of them -->
+      <label for="searchID">ID</label>
+      <input type="radio" id="searchNameBox"onchange="checkBox()"  class="searchBox" name="searchBox">
+      <label for="searchID">Name</label>
+    </div>
+  <input type="search" id="search_book_name" placeholder="Search by name or author..." oninput="searchBooksName()">
+  <input type="search" id="search_book_id" placeholder="Search by ID..." oninput="searchBooksID()">
+  <div id="searchMSG"></div>
+  <div class="title" id="title"></div>
+  <div id="booksDisplay"></div>
+  <!--NOTE: SCRIPT ENTRY!!!-->
+  <script>
+    const MY_SERVER = "https://library-project-back-tazt.onrender.com";
+    const showBooks = async () => {
+      books = await axios.get(MY_SERVER + "/show-books");
+      booksDisplay.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name of book</th>
+                            <th>Author</th>
+                            <th>Year of released</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${books.data
+          .map(
+            (book) => `
+                        <tr>
+                            
+                            <td>${book.name}</td>
+                            <td>${book.author}</td>
+                            <td>${book.year_published}</td>
+                            <td>${book.book_type}</td>
+                            <td><button onclick="deleteBook(${book.id})">Delete</button>
+                            <button onclick="openUpdate(${book.id})">Update</button></td>
+                        </tr> `
+          )
+          .join("")}
+                    </tbody>
+                </table>`;
+    };
+    //SEARCH BOOKS FUNCTION
+    //CHECKBOX FUNCTIONS
+    const checkBox = () => {
+      const searchIDBox = document.getElementById('searchIDBox')
+      const searchNameBox = document.getElementById('searchNameBox')
+
+      const searchIdInput = document.getElementById('search_book_id')
+      const searchNameInput = document.getElementById('search_book_name')
+      if (searchIDBox.checked) {
+        searchIdInput.style.display = 'block'
+        searchNameInput.style.display = 'none'
+        showBooks()
+      } else if (searchNameBox.checked) {
+        searchNameInput.style.display = 'block'
+        searchIdInput.style.display = 'none'
+        showBooks()
+      }
+    }
+
+
+
+    //SEARCH BOOK BY NAME FUNCTION
+    const searchBooksName = async () => {
+      const searchBookCap = document.getElementById('search_book_name');
+      const searchBook = searchBookCap.value.toLowerCase();
+
+      const response = await axios.get(`${MY_SERVER}/search-books-name?search=${searchBook}`);
+      const filteredData = response.data;
+
+
+      //Checking if the input value exist in the database
+      if (filteredData.some(book =>
+        book.name.toLowerCase().includes(searchBook) ||
+        book.author.toLowerCase().includes(searchBook)
+      )) {
+        booksDisplay.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name of book</th>
+                            <th>Author</th>
+                            <th>Date of release</th>
+                            <th>Quantity</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData
+            .map(
+              data => `
+                                    <tr>
+                                        <td>${data.id}</td>
+                                        <td>${data.name}</td>
+                                        <td>${data.author}</td>
+                                        <td>${data.date_published}</td>
+                                        <td>${data.quantity}</td>
+                                        <td>${data.type}</td>
+                                        <td>
+                                            <button onclick="deleteBook(${data.id})">Delete</button>
+                                            <button onclick="updateBook(${data.id})">Edit</button>
+                                        </td>
+                                    </tr>`
+            )
+            .join('')}
+                    </tbody>
+                </table>`;
+        searchMSG.innerHTML = ''; // Clear any previous "Book not found" message
+      } else {
+        // No books found, display a message
+        booksDisplay.innerHTML = '';
+        searchMSG.innerHTML = 'Book not found';
+        searchMSG.style.color = 'red';
+      }
+    }
+
+    //SEARCH BOOK BY ID FUNCTION
+    const searchBooksID = async () => {
+      const searchBookCap = document.getElementById('search_book_id');
+      const searchBook = searchBookCap.value;
+
+      const response = await axios.get(`${MY_SERVER}/search-books-id?search=${searchBook}`);
+      const filteredData = response.data;
+
+      // Do something with the filtered data
+
+      if (filteredData.some(book =>
+        book.id.toString().includes(searchBook)
+      )) {
+        booksDisplay.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name of book</th>
+                            <th>Author</th>
+                            <th>Date of release</th>
+                            <th>Quantity</th>
+                            <th>Type</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData
+            .map(
+              data => `
+                                    <tr>
+                                        <td>${data.id}</td>
+                                        <td>${data.name}</td>
+                                        <td>${data.author}</td>
+                                        <td>${data.date_published}</td>
+                                        <td>${data.quantity}</td>
+                                        <td>${data.type}</td>
+                                        <td>
+                                            <button onclick="openDele(${data.id})">Delete</button>
+                                            <button onclick="updateBook(${data.id})">Edit</button>
+                                        </td>
+                                    </tr>`
+            )
+            .join('')}
+                    </tbody>
+                </table>`;
+        searchMSG.innerHTML = ''; // Clear any previous "Book not found" message
+      } else {
+        // No books found, display a message
+        booksDisplay.innerHTML = '';
+        searchMSG.innerHTML = 'Book not found';
+        searchMSG.style.color = 'red';
+      }
+    }
+
+    const deleteBook = async (bookid) => {
+      await axios.delete(`${MY_SERVER}/delete-book/${bookid}`);
+      showBooks();
+    };
+
+    const openUpdate = async (bookid) => {
+      book = await axios.get(`${MY_SERVER}/get-book/${bookid}`);
+
+      const overlay = document.createElement("div");
+      overlay.classList.add("overlay");
+
+      const popup = document.createElement("div");
+      popup.classList.add("popup");
+
+      const closeButton = document.createElement("button");
+      closeButton.classList.add("close-button");
+      closeButton.innerHTML = "&times;";
+      closeButton.addEventListener("click", closeUpdate);
+      const updateContainer = document.createElement("div");
+      updateContainer.classList.add("update-container");
+      updateContainer.innerHTML = `
+            <div class="title">Update a book:</div>
+            Name<br>
+            <input id="name" placeholder="${book.data["name"]}"><br>
+            Author<br>
+            <input id="author" placeholder="${book.data["author"]}"><br>
+            Year Published<br>
+            <input id="year_publish" placeholder="${book.data["year_published"]}"><br>
+            Type (1 - up to 10 days, 2 - up to 5 days, 3 - up to 2 days)<br>
+            <input id="type_book" placeholder="${book.data["book_type"]}""><br>
+            <button onclick="updateBook(${book.data["id"]})">Update</button>
+        `;
+
+      popup.appendChild(closeButton);
+      popup.appendChild(updateContainer);
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+    };
+
+    const updateBook = async (bookId) => {
+      const name = document.getElementById("name").value;
+      const author = document.getElementById("author").value;
+      const yearPublish = document.getElementById("year_publish").value;
+      const typeBook = document.getElementById("type_book").value;
+
+      const data = {
+        name: name,
+        author: author,
+        year_published: yearPublish,
+        book_type: typeBook,
+      };
+
+      await axios.put(`${MY_SERVER}/update-book/${bookId}`, data);
+      closeUpdate();
+    };
+
+    const closeUpdate = () => {
+      const overlay = document.querySelector(".overlay");
+      if (overlay) {
+        document.body.removeChild(overlay);
+      }
+    };
+
+    showBooks();
+  </script>
+</body>
+
+</html>

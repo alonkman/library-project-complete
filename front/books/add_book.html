@@ -1,0 +1,74 @@
+
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div class="subnavbar">
+        <ul>
+            <li><a href="booksH.html">List</a></li>
+            <li><a href="add_book.html">Add book</a></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <div class="title">Add a book:</div>
+        Name<br>
+        <input id="name" placeholder="Book name"><br>
+        Author<br>
+        <input id="author" placeholder="Author of the book"><br>
+        Year Published<br>
+        <input id="year_publish" placeholder="DD/MM/YY"><br>
+        Type(1-up to 10 days, 2- up to 5 days, 3 - up to 2 days)<br>
+        <input id="type_book" placeholder="Time of loan"><br>
+        <button onclick="addBook()">Sumbit</button>
+    </div>
+
+
+
+
+
+
+    <!--NOTE: SCRIPT ENTRY!!!-->
+    <script>
+        const MY_SERVER = 'https://library-project-back-tazt.onrender.com'
+        const addBook = async () => {
+            const name = document.getElementById('name').value
+            const author = document.getElementById('author').value
+            const yearPublish = document.getElementById('year_publish').value
+            const typeBook = document.getElementById('type_book').value
+
+
+            data = {
+                name: name,
+                author: author,
+                year_published: yearPublish,
+                book_type: typeBook
+            }
+            await axios.post(MY_SERVER + "/add-book", data)
+        }
+        const updateBook = async (bookId) => {
+        const name = document.getElementById('name').value
+        const author = document.getElementById('author').value
+        const yearPublish = document.getElementById('year_publish').value
+        const typeBook = document.getElementById('type_book').value
+
+            const data = {
+                 name: name,
+                author: author,
+                year_published: yearPublish,
+                type_book: typeBook
+            }
+
+        await axios.put(`${MY_SERVER}/update-book/${bookId}`, data)
+        }
+
+    </script>
+</body>
+
+</html>

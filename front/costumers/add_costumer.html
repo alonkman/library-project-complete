@@ -1,0 +1,51 @@
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.1.2/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div class="subnavbar">
+        <ul>
+            <li><a href="cosutmersH.html">List</a></li>
+            <li><a href="add_costumer.html">Add customer</a></li>
+        </ul>
+    </div>
+
+    <div class="title">
+        <div class="container">
+            <div class="title">Add customer:</div>
+            Full name: <br>
+            <input id="name" placeholder="Ex:Lidor Maymon"><br>
+            City:<br>
+            <input id="city" placeholder="Ex:Holon"><br>
+            Age:<br>
+            <input id="age" placeholder="Ex:22"><br>
+            <button onclick="addCustomer()">Sumbit</button>
+        </div>
+    </div>
+
+
+
+    <script>
+        const MY_SERVER = 'https://library-project-back-tazt.onrender.com'
+        const addCustomer = async () => {
+            const name = document.getElementById('name').value
+            const city = document.getElementById('city').value
+            const age = document.getElementById('age').value
+
+
+
+            data = {
+                name: name,
+                city: city,
+                age: age,
+            }
+            await axios.post(MY_SERVER + "/add-customer", data)
+        }
+    </script>
+</body>
+
